@@ -21,7 +21,12 @@ uv run python -m trihub --gh jjxyxsjr --hf jjshin --ms theGAI
 ## 路线
 
 - v0.1 只读对账 ✅
-- v0.2 一键补齐：跨平台链接、缺失卡面字段（写操作，dry-run 默认开）
+- v0.2 操控 ✅（2026-10-12 真机全验）
+  - `trihub audit` 对账报告
+  - `trihub fix-card <hf_repo> --fields '{"pipeline_tag":"text-generation"}' [--yes]` 补卡面字段
+  - `trihub link --ms theGAI/X --hf jjshin/X [--yes]` 跨平台回链（幂等）
+  - `trihub publish theGAI/X [--private] [--yes]` 魔搭→HF 全量镜像（建仓+权重+卡搬运+source 标注）
+  - 纪律：默认 dry-run、--yes 才写、写后内容级终证（写响应假阴性家族防御）
 - v0.3 发布：一个模型三平台镜像 + 卡面双语适配
 - MCP 层：把 trihub 暴露给 agent（ms-hub-insight 的三平台升级版）
 - 公开只读体检页（创空间，输入用户名出报告，免 token）
