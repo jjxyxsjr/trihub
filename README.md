@@ -35,3 +35,27 @@ uv run python -m trihub --gh jjxyxsjr --hf jjshin --ms theGAI
 
 小而精：不做平台客户端复刻，只做三平台之间那条没人管的缝。
 只读先行、写操作 dry-run、所有断言内容级终证（三平台都有写响应假阴性家族）。
+
+## MCP server（给 agent 用）
+
+```bash
+# stdio JSON-RPC，不依赖 mcp SDK；配置到你的 agent：
+uv run --with git+https://github.com/jjxyxsjr/trihub python -m trihub.mcp_server
+```
+
+| 工具 | 读写 | 作用 |
+|---|---|---|
+| `portfolio_audit` | 只读 | 三平台对账（覆盖/缺口/卡面/链接/残链） |
+| `list_repos` | 只读 | 列某平台某用户的仓库 + 卡面字段/链接 |
+| `check_repo` | 只读 | 单仓体检 |
+| `operate` | 写 | `fix_card` / `link` / `publish`；`execute=false` 默认只出计划，`true` 才落地并自动终证 |
+
+## 公开体检页（创空间）
+
+`studio/` 是自包含 Gradio 应用（免 token 只读体检），国内机房 HF 自动走 hf-mirror。
+部署是魔搭网页专属环节（一键部署 API 建的空间不初始化 git 实体，配方见 `studio/HOW_TO_DEPLOY.md`）。
+
+## 鉴权
+
+只读全免 token。写操作读本机 `~/.cache/huggingface/token`（HF）、`~/.modelscope/token`（魔搭）；
+GitHub 用 `GITHUB_TOKEN` 或本机 `gh` 登录态（无则匿名，只读限流降级）。
