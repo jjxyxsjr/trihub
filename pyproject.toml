@@ -7,6 +7,7 @@ dependencies = ["huggingface_hub", "modelscope", "requests"]
 
 [project.scripts]
 trihub = "trihub.__main__:main"
+trihub-mcp = "trihub.mcp_server:main_stdio"
 
 [build-system]
 requires = ["setuptools>=68"]

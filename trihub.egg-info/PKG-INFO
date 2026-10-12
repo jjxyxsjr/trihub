@@ -3,6 +3,8 @@ Name: trihub
 Version: 0.1.0
 Summary: Audit and operate your GitHub / Hugging Face / ModelScope portfolio from one place
 Requires-Python: >=3.10
+License-File: LICENSE
 Requires-Dist: huggingface_hub
 Requires-Dist: modelscope
 Requires-Dist: requests
+Dynamic: license-file

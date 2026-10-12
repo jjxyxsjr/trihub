@@ -1,8 +1,10 @@
+LICENSE
 README.md
 pyproject.toml
 trihub/__init__.py
 trihub/__main__.py
 trihub/audit.py
+trihub/mcp_server.py
 trihub/ops.py
 trihub/platforms.py
 trihub.egg-info/PKG-INFO
