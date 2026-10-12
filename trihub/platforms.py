@@ -57,37 +57,66 @@ def _frontmatter(readme: str):
             ["license", "base_model", "pipeline_tag", "model-index", "library_name", "tags", "sdk"]}
 
 
-# ---------------- GitHub ----------------
+# ---------------- GitHub（纯 REST，gh CLI 非必需；GITHUB_TOKEN 可选提限额/私有仓）----------------
+_GH_TOKEN = None
+
+def _gh_token():
+    """GITHUB_TOKEN 优先；否则取本机 gh 登录态（创空间无 gh 则匿名）。"""
+    global _GH_TOKEN
+    if _GH_TOKEN is not None:
+        return _GH_TOKEN
+    _GH_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+    if not _GH_TOKEN:
+        try:
+            r = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=8)
+            if r.returncode == 0:
+                _GH_TOKEN = r.stdout.strip()
+        except Exception:
+            pass
+    return _GH_TOKEN
+
+
+def _gh_get(url: str):
+    headers = {"User-Agent": "trihub/0.2", "Accept": "application/vnd.github+json"}
+    tok = _gh_token()
+    if tok:
+        headers["Authorization"] = f"Bearer {tok}"
+    req = urllib.request.Request(url, headers=headers)
+    # GitHub API 直连：Clash 共享出口 IP 常被限流（403 rate limit）；api.github.com 本机直连可达。
+    # 创空间等国内环境若直连不通，GitHub 列会降级为空（体检主体 HF/MS 不受影响）。
+    op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    with op.open(req, timeout=20) as r:
+        return json.loads(r.read().decode())
+
+
 def list_github(owner: str):
     out, page = [], 1
     while True:
-        cmd = ["gh", "api", f"users/{owner}/repos?per_page=100&page={page}&type=all",
-               "--jq", ".[] | @base64"]
-        r = subprocess.run(cmd, capture_output=True, text=True)
-        if r.returncode != 0:
+        try:
+            data = _gh_get(f"https://api.github.com/users/{owner}/repos"
+                           f"?per_page=100&page={page}&type=all&sort=updated")
+        except Exception:
             break
-        lines = [l for l in r.stdout.splitlines() if l.strip()]
-        if not lines:
+        if not data or not isinstance(data, list):
             break
-        import base64
-        for l in lines:
-            d = json.loads(base64.b64decode(l))
+        for d in data:
             if d.get("fork"):
                 continue
             out.append(_gh_repo(d))
+        if len(data) < 100:
+            break
         page += 1
-        if page > 10: break
+        if page > 10:
+            break
     return out
 
 
 def _gh_repo(d: dict):
+    import base64
     readme = ""
     try:
-        b = subprocess.run(["gh", "api", f"repos/{d['full_name']}/readme", "--jq", ".content"],
-                           capture_output=True, text=True)
-        if b.returncode == 0:
-            import base64
-            readme = base64.b64decode(b.stdout.strip()).decode("utf-8", "ignore")
+        r = _gh_get(f"https://api.github.com/repos/{d['full_name']}/readme")
+        readme = base64.b64decode(r["content"]).decode("utf-8", "ignore")
     except Exception:
         pass
     return {"platform": "github", "owner": d["owner"]["login"], "name": d["name"],
