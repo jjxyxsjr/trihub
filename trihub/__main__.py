@@ -42,6 +42,11 @@ def cmd_publish(a):
     print(json.dumps(r, ensure_ascii=False, indent=1))
 
 
+def cmd_studio_push(a):
+    r = ops.push_studio(a.owner, a.name, a.dir, revision=a.revision, yes=a.yes)
+    print(json.dumps(r, ensure_ascii=False, indent=1))
+
+
 def main():
     ap = argparse.ArgumentParser(prog="trihub",
         description="GitHub/HF/ModelScope 作品位对账与操控。写操作默认 dry-run，--yes 才执行。")
@@ -64,6 +69,11 @@ def main():
     ap_pub.add_argument("ms_repo"); ap_pub.add_argument("--hf-name")
     ap_pub.add_argument("--private", action="store_true")
     ap_pub.add_argument("--yes", action="store_true"); ap_pub.set_defaults(f=cmd_publish)
+
+    ap_sp = sub.add_parser("studio-push", help="推整个目录到网页创建的 git-backed Studio")
+    ap_sp.add_argument("owner"); ap_sp.add_argument("name"); ap_sp.add_argument("dir")
+    ap_sp.add_argument("--revision", default="master")
+    ap_sp.add_argument("--yes", action="store_true"); ap_sp.set_defaults(f=cmd_studio_push)
 
     a = ap.parse_args()
     a.f(a)

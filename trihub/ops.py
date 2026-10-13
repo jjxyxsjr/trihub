@@ -174,3 +174,47 @@ def publish_ms_to_hf(ms_repo: str, hf_repo: str | None = None, private: bool = F
     ok = len(files) > 2 and _verify_hf(f"jjshin/{hf_repo}", "Mirrored from")
     return {"ok": ok, "verified": ok, "repo": f"jjshin/{hf_repo}",
             "n_files": len(files), "url": f"https://huggingface.co/jjshin/{hf_repo}"}
+
+
+# ============ 4. studio-push：往网页创建的 git-backed Studio 推整个目录 ============
+def push_studio(owner: str, name: str, local_dir: str, revision: str = "master",
+                yes: bool = False):
+    """递归 multipart 上传 POST /v1/studios/file（Bearer 可写，字段 owner/name/FilePath/Revision/File）。
+    注意：git-backed Studio 的【创建】是网页会话专属（Bearer 创建出僵死记录）；本函数只负责创建后的文件推送。
+    """
+    import os, mimetypes, uuid as _uuid
+    import requests
+
+    root = os.path.abspath(local_dir)
+    files_to_push = []
+    for dirpath, _, names in os.walk(root):
+        if "__pycache__" in dirpath or ".git" in dirpath:
+            continue
+        for nm in names:
+            if nm.endswith((".pyc", ".DS_Store")) or nm == "HOW_TO_DEPLOY.md":
+                continue
+            full = os.path.join(dirpath, nm)
+            rel = os.path.relpath(full, root).replace(os.sep, "/")
+            files_to_push.append((full, rel))
+    plan = {"studio": f"{owner}/{name}", "revision": revision, "files": [r for _, r in files_to_push]}
+    if not yes:
+        return {"ok": True, "dry_run": True, **plan}
+
+    token = open(os.path.expanduser("~/.modelscope/token")).read().strip()
+    url = "https://modelscope.cn/api/v1/studios/file"
+    H = {"Authorization": f"Bearer {token}"}
+    results = []
+    for full, rel in files_to_push:
+        ctype = mimetypes.guess_type(full)[0] or "application/octet-stream"
+        with open(full, "rb") as fh:
+            data = {"owner": owner, "name": name, "FilePath": rel,
+                    "Revision": revision, "CommitMessage": f"trihub push {rel}"}
+            r = requests.post(url, headers=H, data=data,
+                              files={"File": (rel, fh, ctype)}, timeout=120,
+                              proxies={"http": PROXIES["http"] if PROXIES else None,
+                                       "https": PROXIES["https"] if PROXIES else None} if PROXIES else None)
+        j = r.json()
+        ok = j.get("Code") == 200
+        results.append({"file": rel, "ok": ok, "uuid": (j.get("Data") or {}).get("Uuid"),
+                        "msg": j.get("Message", "")[:80]})
+    return {"ok": all(x["ok"] for x in results), "pushed": results}

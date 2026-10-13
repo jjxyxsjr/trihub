@@ -1,18 +1,18 @@
-# 创空间部署（网页创建是平台网页专属环节，约 1 分钟）
+# 创空间部署（git-backed 创建是浏览器会话专属，文件推送全自动）
 
-本目录是自包含部署包（trihub/ 是主包副本，创空间 build 无需访问 GitHub）。
+## 分工（2026-10-13 逆向终裁）
+- **创建 Studio 必须网页**：Bearer POST /v1/studios 两种模式都只产生"僵死记录"（200 占名但无详情/无 git repo，4 次实证）；网页创建的空间有 "System init .gitattributes" commit + 可 clone。和合集/pin 同属浏览器会话专属
+- **创建后文件推送全自动**：trihub studio-push 走 POST /v1/studios/file（multipart，Bearer 可用）
 
-1. modelscope.cn → 创空间 → 创建：SDK 选 Gradio，名字 `trihub-portfolio-auditor`，公开
-2. 进入空间 → 文件（或 git clone 空间地址，网页创建的空间有 git）
-3. 上传/推送本目录全部内容：app.py、requirements.txt、README.md、trihub/
-4. 保存即自动构建；免费 CPU 实例（2vCPU/8GB），本应用纯只读无需 GPU
+## 步骤
+1. 用户网页：modelscope.cn/studios/create → SDK 选 Gradio → 名字（建议 trihub-auditor）→ 公开 → 创建（不要选模板/模型）
+2. 一条命令推全部文件：
+   uv run python -m trihub studio-push theGAI trihub-auditor studio --yes
+3. 平台检测到 app.py 自动构建（免费 CPU 2vCPU/8G），repo/files 内容级终证
 
-## 一键部署 API（已逆向，但创建的空间无 git 实体，仅供批量/自动化研究）
-POST /api/v1/studios，字段（逐个校验，全必填）：
-Name / Path(theGAI/<name>) / ModelPath(任意 theGAI 模型,无模型也要填) /
-Visibility:5 / IsPublic:1 / DeployedByUser:true(bool) /
-InstanceTypeName:"platform/2v-cpu-8g-mem" / ResourceRegion:"cn-beijing" /
-DiskSize:50 / InstanceNumber:1 / SdkName:"gradio" / ExpiredMinutes:480
-免费实例清单：GET /api/v1/studios/free_instance
-空间 git token：GET /api/v1/studios/token?Path=<owner/name>
-删除：DELETE /api/v1/dolphin/studio/query {Path,Name}
+## 端点配方
+- 文件写：POST /v1/studios/file，multipart 字段 owner/name/FilePath/Revision(master)/File(文件)/CommitMessage → {Data:{Uuid}}
+- 文件读：GET /v1/studio/{owner}/{name}/repo/files?Revision=master
+- 详情：GET /v1/studio/{owner}/{name}
+- git clone：https://oauth2:<MS_TOKEN>@www.modelscope.cn/studios/owner/name.git（仅网页建的空间可 clone）
+- 删除：DELETE /v1/dolphin/studio/query {Path,Name}（异步，名字软占用）
