@@ -53,7 +53,7 @@ def run(gh, hf, ms):
             gap if gap else [["（全部已镜像）", ""]])
 
 
-with gr.Blocks(title="trihub · 三平台作品位体检", theme=gr.themes.Soft()) as demo:
+with gr.Blocks(title="trihub · 三平台作品位体检") as demo:
     gr.Markdown("# 🧭 trihub · AI 作品位三平台体检\n"
                 "输入你在 GitHub / Hugging Face / ModelScope 的用户名，一键对账：**镜像覆盖缺口、"
                 "模型卡要素、跨平台链接、残链**。全程只读，不需要任何 token。")
@@ -76,4 +76,4 @@ with gr.Blocks(title="trihub · 三平台作品位体检", theme=gr.themes.Soft(
     btn.click(run, [gh, hf, ms], [summary, cover_tbl, issue_tbl, gap_tbl])
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    demo.launch(server_name="0.0.0.0", server_port=int(__import__("os").environ.get("SERVER_PORT", "7860")), theme=gr.themes.Soft())

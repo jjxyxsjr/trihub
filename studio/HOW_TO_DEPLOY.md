@@ -16,3 +16,14 @@
 - 详情：GET /v1/studio/{owner}/{name}
 - git clone：https://oauth2:<MS_TOKEN>@www.modelscope.cn/studios/owner/name.git（仅网页建的空间可 clone）
 - 删除：DELETE /v1/dolphin/studio/query {Path,Name}（异步，名字软占用）
+
+## 部署配方终版（2026-10-13 实战 trihub-check 全链验证）
+
+1. 用户网页建空壳（git-backed 会话专属）→ 以后名字避开曾用名（删除是软占用）
+2. AI 全自动：
+   - 推文件：`git clone https://oauth2:<MS_TOKEN>@www.modelscope.cn/studios/<owner>/<name>.git` → rsync studio/ → push（网页建的空间才有 git，校验 ACCEPTED）
+   - 部署配置：`PUT /api/v1/studio/<o>/<n>`——**InstanceTypeId 用数字 31**（字符串名报 empty）；**DeployedByUser:false 走 fc 免费平台**（true 走 eas 必 InvokeStartFailed）；SdkVersion 用 6.17.3 stable
+   - 点火：`PUT /api/v1/studio/<o>/<n>/reset_restart` {Path,Name}
+   - 轮询：GET /api/v1/studio/<o>/<n> → CreatingBuildingImage(约3分钟) → Creating(fc) → Running
+   - 日志：PUT /api/v1/studio/<o>/<n>/log（GET 500）；日志空=容器没起（编排层问题非代码）
+3. requirements 瘦身：modelscope 创空间镜像预装，别写进 requirements（构建快且稳）
