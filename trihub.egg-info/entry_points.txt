@@ -1,3 +1,0 @@
-[console_scripts]
-trihub = trihub.__main__:main
-trihub-mcp = trihub.mcp_server:main_stdio

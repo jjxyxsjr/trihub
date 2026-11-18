@@ -1,7 +1,3 @@
-.venv/
+trihub.egg-info/
 __pycache__/
 *.pyc
-.DS_Store
-*.egg-info/
-dist/
-build/
